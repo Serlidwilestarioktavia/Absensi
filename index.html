@@ -1,0 +1,1786 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f2">
+  <title>Hadirin | Absensi Digital</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script defer src="./supabase-config.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --ink: #1d2823;
+      --muted: #718078;
+      --paper: #f4f6f2;
+      --white: #fff;
+      --line: #e4e9e3;
+      --green: #176c4b;
+      --green-soft: #e4f1e9;
+      --lime: #c9ef68;
+      --coral: #d96c51;
+      --shadow: 0 12px 35px rgba(27, 47, 36, .07)
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Manrope, sans-serif;
+      font-size: 14px
+    }
+
+    button,
+    input,
+    select {
+      font: inherit
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid #a8d875;
+      outline-offset: 2px
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr)
+    }
+
+    .sidebar {
+      background: #1d3028;
+      color: #f6f8f5;
+      padding: 27px 18px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 10px 31px
+    }
+
+    .brand-mark {
+      height: 35px;
+      width: 35px;
+      background: var(--lime);
+      color: #20362a;
+      border-radius: 10px;
+      display: grid;
+      place-items: center
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0
+    }
+
+    .brand-sub {
+      font: 10px 'DM Mono', monospace;
+      color: #9eafa5;
+      margin-top: 3px
+    }
+
+    .nav-label {
+      padding: 0 12px;
+      color: #87998f;
+      font: 10px 'DM Mono', monospace;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin: 15px 0 9px
+    }
+
+    .nav {
+      display: grid;
+      gap: 5px
+    }
+
+    .nav button {
+      border: 0;
+      color: #bfcbc3;
+      background: transparent;
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      background: #2b4438;
+      color: #fff
+    }
+
+    .nav button.active {
+      box-shadow: inset 3px 0 var(--lime)
+    }
+
+    .side-bottom {
+      margin-top: auto;
+      border-top: 1px solid #35483f;
+      padding: 16px 8px 0;
+      color: #a8b7ae;
+      font-size: 11px;
+      line-height: 1.7
+    }
+
+    .local-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #a7df64;
+      margin-right: 6px;
+      transition: background .2s, box-shadow .2s;
+    }
+
+    .local-dot.online {
+      background: #10b981;
+      box-shadow: 0 0 7px #10b981;
+    }
+
+    .local-dot.offline {
+      background: #9ca3af;
+      box-shadow: none;
+    }
+
+    .local-dot.error {
+      background: #ef4444;
+      box-shadow: 0 0 7px #ef4444;
+    }
+
+    main {
+      min-width: 0;
+      padding: 26px 34px 48px;
+      max-width: 1600px;
+      width: 100%;
+      margin: auto
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px
+    }
+
+    .crumb {
+      font: 11px 'DM Mono', monospace;
+      color: var(--muted)
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      background: #d9e8d6;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--green);
+      font-weight: 800
+    }
+
+    .profile-name {
+      font-size: 12px;
+      font-weight: 700
+    }
+
+    .profile-role {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .view {
+      display: none;
+      animation: appear .25s ease both
+    }
+
+    .view.active {
+      display: block
+    }
+
+    @keyframes appear {
+      from {
+        opacity: 0;
+        transform: translateY(5px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .heading-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 18px;
+      margin: 0 0 22px
+    }
+
+    .eyebrow {
+      font: 10px 'DM Mono', monospace;
+      color: var(--green);
+      text-transform: uppercase;
+      margin-bottom: 8px
+    }
+
+    .heading-row h1 {
+      font-size: 27px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      margin: 0;
+      font-weight: 800
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    .date-chip {
+      background: white;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 7px;
+      color: #42534a;
+      font: 11px 'DM Mono', monospace;
+      white-space: nowrap
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px
+    }
+
+    .metric {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 17px 18px;
+      min-height: 106px
+    }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    .metric-icon {
+      width: 27px;
+      height: 27px;
+      border-radius: 7px;
+      background: #eff4ed;
+      color: var(--green);
+      display: grid;
+      place-items: center
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 800;
+      margin-top: 10px;
+      line-height: 1
+    }
+
+    .metric-foot {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 7px
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(270px, .9fr);
+      gap: 16px
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-width: 0
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 17px 19px;
+      border-bottom: 1px solid #edf0eb
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 800
+    }
+
+    .panel-note {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px
+    }
+
+    .link-button {
+      border: 0;
+      background: none;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .table-wrap {
+      overflow: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      white-space: nowrap
+    }
+
+    th {
+      font: 10px 'DM Mono', monospace;
+      color: #7e8c83;
+      font-weight: 400;
+      padding: 12px 18px;
+      background: #fbfcfa
+    }
+
+    td {
+      padding: 12px 18px;
+      border-top: 1px solid #f0f2ef;
+      font-size: 11px
+    }
+
+    tbody tr:hover {
+      background: #fafcf9
+    }
+
+    .person {
+      display: flex;
+      align-items: center;
+      gap: 9px
+    }
+
+    .person-avatar {
+      height: 29px;
+      width: 29px;
+      border-radius: 8px;
+      background: #e7eee3;
+      display: grid;
+      place-items: center;
+      color: #426750;
+      font-weight: 800;
+      font-size: 10px
+    }
+
+    .person-name {
+      font-size: 11px;
+      font-weight: 700
+    }
+
+    .person-id {
+      font: 9px 'DM Mono', monospace;
+      color: #859188;
+      margin-top: 3px
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 20px;
+      padding: 5px 8px;
+      font-size: 9px;
+      font-weight: 800
+    }
+
+    .badge.present {
+      background: #e6f3e8;
+      color: #31754c
+    }
+
+    .badge.late {
+      background: #fff1dc;
+      color: #a16514
+    }
+
+    .badge.absent {
+      background: #f2e9e5;
+      color: #8c6254
+    }
+
+    .badge.outline {
+      background: #f1f3f0;
+      color: #6c796f
+    }
+
+    .actions-list {
+      padding: 14px
+    }
+
+    .action-tile {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      margin-bottom: 9px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .15s, border-color .15s
+    }
+
+    .action-tile:hover {
+      transform: translateY(-2px);
+      border-color: #9ab69e
+    }
+
+    .action-icon {
+      height: 38px;
+      width: 38px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      flex: none
+    }
+
+    .action-icon.face {
+      background: #e4f1e9;
+      color: #176c4b
+    }
+
+    .action-icon.code {
+      background: #fff1db;
+      color: #a16514
+    }
+
+    .action-copy {
+      flex: 1
+    }
+
+    .action-copy strong {
+      font-size: 11px;
+      display: block
+    }
+
+    .action-copy span {
+      font-size: 10px;
+      color: var(--muted);
+      display: block;
+      margin-top: 4px
+    }
+
+    .action-tile>i {
+      color: #9aa69e
+    }
+
+    .notice {
+      background: #f0f5ec;
+      margin: 12px 14px 14px;
+      padding: 12px;
+      border-radius: 7px;
+      color: #56675a;
+      font-size: 10px;
+      line-height: 1.6
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .input {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 6px;
+      padding: 10px 11px;
+      color: var(--ink);
+      font-size: 11px;
+      min-width: 0
+    }
+
+    .input.search {
+      width: 230px
+    }
+
+    .button {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 9px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap
+    }
+
+    .button:hover {
+      border-color: #9db2a1
+    }
+
+    .button.primary {
+      border-color: var(--green);
+      background: var(--green);
+      color: white
+    }
+
+    .button.primary:hover {
+      background: #105a3c
+    }
+
+    .button.lime {
+      border-color: var(--lime);
+      background: var(--lime);
+      color: #21352a
+    }
+
+    .button.danger {
+      color: #a6463c
+    }
+
+    .table-panel {
+      margin-top: 15px
+    }
+
+    .empty {
+      padding: 42px 15px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px
+    }
+
+    .empty i {
+      display: block;
+      margin: 0 auto 11px;
+      color: #9eaca2
+    }
+
+    .empty strong {
+      display: block;
+      color: var(--ink);
+      font-size: 12px;
+      margin-bottom: 4px
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 30, 23, .53);
+      z-index: 5;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px
+    }
+
+    .modal-backdrop.open {
+      display: flex
+    }
+
+    .modal {
+      width: min(580px, 100%);
+      background: white;
+      border-radius: 9px;
+      box-shadow: var(--shadow);
+      max-height: calc(100vh - 36px);
+      overflow: auto
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 19px 21px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .modal-head h2 {
+      font-size: 17px;
+      margin: 0
+    }
+
+    .modal-head p {
+      font-size: 11px;
+      color: var(--muted);
+      margin: 6px 0 0
+    }
+
+    .icon-button {
+      border: 0;
+      background: transparent;
+      color: #708078;
+      padding: 4px;
+      display: grid;
+      place-items: center
+    }
+
+    .modal-body {
+      padding: 20px 21px
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px
+    }
+
+    .field {
+      display: grid;
+      gap: 6px
+    }
+
+    .field.full {
+      grid-column: 1/-1
+    }
+
+    .field label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #526158
+    }
+
+    .field .input {
+      width: 100%
+    }
+
+    .camera-box {
+      background: #17251e;
+      border-radius: 7px;
+      min-height: 240px;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      color: #d7e2da
+    }
+
+    .camera-box video {
+      width: 100%;
+      height: 100%;
+      max-height: 340px;
+      object-fit: cover;
+      display: none
+    }
+
+    .camera-box video.on {
+      display: block
+    }
+
+    .camera-placeholder {
+      text-align: center;
+      padding: 22px;
+      font-size: 11px;
+      line-height: 1.7
+    }
+
+    .camera-placeholder i {
+      display: block;
+      margin: 0 auto 12px;
+      color: var(--lime)
+    }
+
+    .scan-overlay {
+      position: absolute;
+      inset: 18% 23%;
+      border: 2px solid var(--lime);
+      border-radius: 12px;
+      pointer-events: none;
+      display: none
+    }
+
+    .scan-overlay.on {
+      display: block
+    }
+
+    .cam-status {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 10px 0
+    }
+
+    .modal-actions {
+      padding: 0 21px 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px
+    }
+
+    .modal-actions.spread {
+      justify-content: space-between
+    }
+
+    .camera-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1d3028;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 7px;
+      box-shadow: var(--shadow);
+      font-size: 11px;
+      z-index: 10;
+      max-width: min(360px, calc(100vw - 40px));
+      opacity: 0;
+      transform: translateY(10px);
+      transition: .2s;
+      pointer-events: none
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: none
+    }
+
+    .settings-box {
+      margin-top: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px
+    }
+
+    .settings-box h3 {
+      font-size: 13px;
+      margin: 0 0 8px
+    }
+
+    .settings-box p {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0
+    }
+
+    .mobile-menu {
+      display: none
+    }
+
+    .mono {
+      font-family: 'DM Mono', monospace
+    }
+
+    @media(max-width:1050px) {
+      .shell {
+        grid-template-columns: 210px 1fr
+      }
+
+      .sidebar {
+        padding-inline: 12px
+      }
+
+      main {
+        padding: 24px
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media(max-width:700px) {
+      .shell {
+        display: block
+      }
+
+      .sidebar {
+        position: fixed;
+        z-index: 4;
+        top: 0;
+        left: 0;
+        width: 248px;
+        transform: translateX(-102%);
+        transition: transform .2s;
+        box-shadow: var(--shadow)
+      }
+
+      .sidebar.open {
+        transform: none
+      }
+
+      .mobile-menu {
+        display: grid;
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 6px;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        margin-right: 10px
+      }
+
+      .topbar {
+        justify-content: flex-start
+      }
+
+      .topbar>.profile {
+        margin-left: auto
+      }
+
+      .crumb {
+        display: none
+      }
+
+      main {
+        padding: 16px 14px 34px
+      }
+
+      .topbar {
+        margin-bottom: 23px
+      }
+
+      .heading-row {
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 17px
+      }
+
+      .heading-row h1 {
+        font-size: 24px
+      }
+
+      .heading-row .date-chip {
+        align-self: flex-start
+      }
+
+      .metrics {
+        gap: 8px
+      }
+
+      .metric {
+        padding: 13px;
+        min-height: 96px
+      }
+
+      .metric-value {
+        font-size: 23px
+      }
+
+      .dashboard-grid {
+        gap: 11px
+      }
+
+      .panel-head {
+        padding: 14px
+      }
+
+      .toolbar {
+        width: 100%
+      }
+
+      .toolbar .input.search {
+        width: 100%;
+        flex: 1
+      }
+
+      .toolbar .button {
+        flex: 1
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr
+      }
+
+      .field.full {
+        grid-column: auto
+      }
+
+      .modal {
+        max-height: calc(100vh - 20px)
+      }
+
+      .date-chip {
+        font-size: 10px
+      }
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    .auth-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(ellipse at 12% 88%, #e2efdf 0, transparent 36%), radial-gradient(ellipse at 88% 10%, #e8f0d4 0, transparent 34%), var(--paper)
+    }
+
+    .auth-panel {
+      width: min(100%, 420px);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: var(--shadow)
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px
+    }
+
+    .auth-panel h1 {
+      font-size: 24px;
+      margin: 0
+    }
+
+    .auth-panel p {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 8px 0 22px
+    }
+
+    .auth-panel form {
+      display: grid;
+      gap: 14px
+    }
+
+    .auth-panel .button {
+      width: 100%;
+      justify-content: center
+    }
+
+    .auth-message {
+      min-height: 18px;
+      color: var(--coral);
+      font-size: 12px;
+      margin-top: 12px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="auth-screen" id="authScreen" hidden>
+    <section class="auth-panel">
+      <div class="auth-brand">
+        <div class="brand-mark"><i data-lucide="scan-face" size="20"></i></div>
+        <div>
+          <div class="brand-name">hadirin</div>
+          <div class="brand-sub">ABSENSI DIGITAL</div>
+        </div>
+      </div>
+      <h1>Masuk</h1>
+      <p>Gunakan akun pengelola atau guru/dosen untuk membuka data sekolah.</p>
+      <form id="loginForm">
+        <div class="field"><label for="loginEmail">Gmail / email</label><input class="input" id="loginEmail"
+            name="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="loginPassword">Password</label><input class="input" id="loginPassword"
+            name="password" type="password" autocomplete="current-password" required></div><button
+          class="button primary" type="submit" id="loginButton">Masuk</button>
+      </form>
+      <div class="auth-message" id="authMessage" role="alert"></div>
+    </section>
+  </div>
+  <div class="shell" id="appShell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><i data-lucide="scan-face" size="20"></i></div>
+        <div>
+          <div class="brand-name">hadirin</div>
+          <div class="brand-sub">ABSENSI DIGITAL</div>
+        </div>
+      </div>
+      <div class="nav-label">Menu utama</div>
+      <nav class="nav" aria-label="Navigasi utama">
+        <button class="active" data-view="dashboard"><i data-lucide="layout-dashboard" size="17"></i> Ringkasan</button>
+        <button data-view="students"><i data-lucide="users" size="17"></i> Data siswa</button>
+        <button data-view="attendance"><i data-lucide="clipboard-check" size="17"></i> Riwayat absensi</button>
+      </nav>
+      <div class="nav-label" style="margin-top:26px">Pengaturan</div>
+      <nav class="nav"><button data-view="settings"><i data-lucide="settings-2" size="17"></i> Tentang sistem</button>
+      </nav>
+      <div class="side-bottom"><span class="local-dot"></span>Tersimpan di perangkat ini<br><span
+          id="storage-label">Data lokal aktif</span></div>
+    </aside>
+    <main>
+      <header class="topbar"><button class="mobile-menu" id="mobileMenu" aria-label="Buka menu"><i data-lucide="menu"
+            size="17"></i></button>
+        <div class="crumb">SEKOLAH / <span id="crumb-name">RINGKASAN</span></div>
+        <div class="profile">
+          <div class="avatar" id="profileAvatar">A</div>
+          <div>
+            <div class="profile-name" id="profileName">Administrator</div>
+            <div class="profile-role" id="profileRole">Pengelola absensi</div>
+          </div><button class="icon-button" id="logoutButton" aria-label="Keluar" title="Keluar" hidden><i
+              data-lucide="log-out" size="17"></i></button>
+        </div>
+      </header>
+      <section class="view active" id="view-dashboard">
+        <div class="heading-row">
+          <div>
+            <div class="eyebrow">Pusat aktivitas</div>
+            <h1>Selamat datang 👋</h1>
+            <p class="subtitle">Pantau kehadiran dan kelola absensi hari ini.</p>
+          </div>
+          <div class="date-chip" id="todayDate"></div>
+        </div>
+        <div class="metrics">
+          <article class="metric">
+            <div class="metric-top">Total siswa <span class="metric-icon"><i data-lucide="users" size="15"></i></span>
+            </div>
+            <div class="metric-value" id="metric-students">0</div>
+            <div class="metric-foot">Terdaftar dalam sistem</div>
+          </article>
+          <article class="metric">
+            <div class="metric-top">Hadir hari ini <span class="metric-icon"><i data-lucide="user-check"
+                  size="15"></i></span></div>
+            <div class="metric-value" id="metric-present">0</div>
+            <div class="metric-foot">Sudah melakukan absensi</div>
+          </article>
+          <article class="metric">
+            <div class="metric-top">Terlambat <span class="metric-icon"><i data-lucide="clock-3" size="15"></i></span>
+            </div>
+            <div class="metric-value" id="metric-late">0</div>
+            <div class="metric-foot">Melewati batas waktu masuk</div>
+          </article>
+          <article class="metric">
+            <div class="metric-top">Belum hadir <span class="metric-icon"><i data-lucide="user-minus"
+                  size="15"></i></span></div>
+            <div class="metric-value" id="metric-away">0</div>
+            <div class="metric-foot">Belum tercatat hari ini</div>
+          </article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Aktivitas terbaru</div>
+                <div class="panel-note">Catatan absensi terkini</div>
+              </div><button class="link-button" data-go="attendance">Lihat semua <i data-lucide="arrow-right"
+                  size="14"></i></button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>NAMA</th>
+                    <th>WAKTU</th>
+                    <th>METODE</th>
+                    <th>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="recentRows"></tbody>
+              </table>
+              <div class="empty" id="recentEmpty"><i data-lucide="clipboard-list" size="23"></i><strong>Belum ada
+                  absensi</strong>Data kehadiran hari ini akan muncul di sini.</div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-title">Mulai absensi</div>
+                <div class="panel-note">Pilih metode pencatatan</div>
+              </div>
+            </div>
+            <div class="actions-list">
+              <div class="action-tile" data-action="face">
+                <div class="action-icon face"><i data-lucide="scan-face" size="20"></i></div>
+                <div class="action-copy"><strong>Absensi wajah</strong><span>Verifikasi langsung melalui kamera</span>
+                </div><i data-lucide="chevron-right" size="16"></i>
+              </div>
+              <div class="action-tile" data-action="barcode">
+                <div class="action-icon code"><i data-lucide="scan-line" size="20"></i></div>
+                <div class="action-copy"><strong>Scan barcode / QR</strong><span>Pindai kartu siswa dengan kamera</span>
+                </div><i data-lucide="chevron-right" size="16"></i>
+              </div><button class="button primary" style="width:100%;margin-top:3px" data-action="add-student"><i
+                  data-lucide="user-plus" size="15"></i> Tambah siswa</button>
+            </div>
+            <div class="notice">Absensi wajah memerlukan koneksi internet untuk memuat model pengenalan. Kamera berjalan
+              pada <span class="mono">localhost</span> atau HTTPS.</div>
+          </section>
+        </div>
+      </section>
+      <section class="view" id="view-students">
+        <div class="heading-row">
+          <div>
+            <div class="eyebrow">Direktori</div>
+            <h1>Data siswa</h1>
+            <p class="subtitle">Kelola identitas dan data biometrik siswa.</p>
+          </div>
+          <div class="toolbar"><input class="input search" id="studentSearch" placeholder="Cari nama atau ID..."
+              aria-label="Cari siswa"><button class="button" id="downloadSelectedCodes" disabled><i
+                data-lucide="qr-code" size="15"></i> Unduh barcode (<span id="selectedCount">0</span>)</button><button
+              class="button primary" data-action="add-student"><i data-lucide="user-plus" size="15"></i> Tambah
+              siswa</button></div>
+        </div>
+        <section class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAllStudents" aria-label="Pilih semua siswa"></th>
+                  <th>SISWA</th>
+                  <th>KELAS</th>
+                  <th>EMAIL</th>
+                  <th>DATA WAJAH</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="studentRows"></tbody>
+            </table>
+            <div class="empty" id="studentEmpty"><i data-lucide="users" size="23"></i><strong>Belum ada data
+                siswa</strong>Tambahkan siswa untuk mulai mencatat kehadiran.</div>
+          </div>
+        </section>
+      </section>
+      <section class="view" id="view-attendance">
+        <div class="heading-row">
+          <div>
+            <div class="eyebrow">Rekap kehadiran</div>
+            <h1>Riwayat absensi</h1>
+            <p class="subtitle">Lihat, filter, dan ekspor catatan kehadiran.</p>
+          </div>
+          <div class="toolbar"><input class="input" type="date" id="attendanceDate" aria-label="Filter tanggal"><button
+              class="button" id="exportCsv"><i data-lucide="download" size="15"></i> Ekspor CSV</button></div>
+        </div>
+        <section class="panel table-panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>NAMA</th>
+                  <th>ID SISWA</th>
+                  <th>TANGGAL</th>
+                  <th>WAKTU</th>
+                  <th>METODE</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceRows"></tbody>
+            </table>
+            <div class="empty" id="attendanceEmpty"><i data-lucide="calendar-days" size="23"></i><strong>Belum ada
+                catatan absensi</strong>Catatan akan ditampilkan setelah siswa melakukan absensi.</div>
+          </div>
+        </section>
+      </section>
+      <section class="view" id="view-settings">
+        <div class="heading-row">
+          <div>
+            <div class="eyebrow">Informasi</div>
+            <h1>Tentang sistem</h1>
+            <p class="subtitle">Informasi penyimpanan dan penggunaan aplikasi.</p>
+          </div>
+        <div class="settings-box" style="border: 1px solid #b7d6be; background: #ffffff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px">
+            <h3 style="margin:0; display:flex; align-items:center; gap:8px">
+              <i data-lucide="cloud" size="18" style="color:var(--green)"></i> Integrasi Supabase Cloud
+            </h3>
+            <span class="badge outline" id="cloudStatusBadge">Memeriksa koneksi...</span>
+          </div>
+          <p style="margin-top:0">Hubungkan aplikasi ke database Supabase agar data siswa, foto wajah, dan absensi tersimpan secara real-time di cloud.</p>
+          
+          <div class="form-grid" style="margin-top:14px">
+            <div class="field full">
+              <label for="cfgSupabaseUrl">Supabase Project URL</label>
+              <input class="input" id="cfgSupabaseUrl" type="url" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off">
+            </div>
+            <div class="field full">
+              <label for="cfgSupabaseKey">Supabase Anon Key (Public API Key)</label>
+              <input class="input" id="cfgSupabaseKey" type="password" placeholder="eyJhbGciOi..." autocomplete="off">
+            </div>
+          </div>
+          
+          <div class="toolbar" style="margin-top:14px">
+            <button class="button primary" id="btnConnectSupabase"><i data-lucide="check" size="15"></i> Hubungkan & Simpan</button>
+            <button class="button" id="btnSyncCloudNow"><i data-lucide="refresh-cw" size="15"></i> Sinkronkan Data Sekarang</button>
+            <button class="button danger" id="btnDisconnectCloud" style="margin-left:auto"><i data-lucide="unlink" size="15"></i> Putus Koneksi</button>
+          </div>
+          <div id="cloudConnectionMsg" style="font-size:11px; margin-top:10px; font-weight:500"></div>
+        </div>
+        <div class="settings-box" id="managerAccountsBox" hidden>
+          <h3>Akun guru/dosen</h3>
+          <p>Pengelola dapat membuat akun login baru untuk staf absensi.</p>
+          <div class="toolbar"><button class="button primary" id="createTeacherAccount"><i data-lucide="user-plus"
+                size="15"></i> Buat akun</button><button class="button" id="importLocalData"><i
+                data-lucide="cloud-upload" size="15"></i> Impor data perangkat ini</button></div>
+        </div>
+        <div class="settings-box">
+          <h3>Penyimpanan</h3>
+          <p id="storageDescription">Data siswa dan absensi saat ini disimpan pada penyimpanan browser perangkat ini.
+            Data tidak otomatis tersinkron ke perangkat lain.</p>
+        </div>
+        <div class="settings-box">
+          <h3>Data biometrik</h3>
+          <p>Template wajah disimpan sebagai angka deskriptor, bukan foto. Persetujuan diperlukan sebelum mengumpulkan
+            dan menyinkronkan data biometrik siswa. Sediakan metode absensi alternatif sesuai kebijakan sekolah.</p>
+        </div>
+        <div class="settings-box">
+          <h3>Waktu masuk</h3>
+          <p>Siswa yang melakukan absensi setelah pukul 07.00 akan diberi status terlambat. Waktu perangkat lokal
+            digunakan untuk menentukan tanggal dan waktu.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="modalBackdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <div>
+          <h2 id="modalTitle"></h2>
+          <p id="modalSubtitle"></p>
+        </div><button class="icon-button" data-close aria-label="Tutup"><i data-lucide="x" size="19"></i></button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    (() => {
+      const DB_KEY = 'hadirin.data.v1';
+      const CLOUD_CONFIG_KEY = 'hadirin.supabase.config';
+      const state = { students: [], records: [], stream: null, timer: null, scanControls: null, faceMatcher: null, faceModelsReady: false, toastTimer: null, supabase: null, user: null, profile: null, cloudReady: false, syncQueue: Promise.resolve(), realtimeChannel: null, realtimeTimer: null, localSnapshot: null };
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const today = () => new Date().toLocaleDateString('sv-SE');
+      const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+      const initials = name => name.split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || '?';
+      function loadData() { try { const data = JSON.parse(localStorage.getItem(DB_KEY) || '{}'); state.students = Array.isArray(data.students) ? data.students : []; state.records = Array.isArray(data.records) ? data.records : []; } catch { state.students = []; state.records = []; } state.localSnapshot = JSON.parse(JSON.stringify({ students: state.students, records: state.records })); }
+      function cacheData() { localStorage.setItem(DB_KEY, JSON.stringify({ students: state.students, records: state.records })); }
+      function studentRow(student) { return { id: student.id, name: student.name, class_name: student.className || '', email: student.email || '', descriptor: student.descriptor || null }; }
+      function attendanceRow(record) { return { student_id: record.studentId, name: record.name, attendance_date: record.date, attendance_time: record.time, status: record.status, method: record.method, created_at_ms: record.createdAt }; }
+
+      function getCloudConfig() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || '{}');
+          if (stored.url && stored.anonKey) return stored;
+        } catch (_) {}
+        const win = window.HADIRIN_SUPABASE || {};
+        if (win.url && win.anonKey) return { url: win.url, anonKey: win.anonKey };
+        return { url: '', anonKey: '' };
+      }
+
+      function setStorageDot(status) {
+        const dot = $('.local-dot');
+        if (dot) dot.className = 'local-dot ' + status;
+      }
+
+      function updateCloudUI(isConnected, statusText, isError = false) {
+        const badge = $('#cloudStatusBadge');
+        const msg = $('#cloudConnectionMsg');
+        if (badge) {
+          badge.textContent = statusText;
+          badge.className = 'badge ' + (isConnected ? 'present' : isError ? 'late' : 'outline');
+        }
+        if (msg) {
+          if (isConnected) {
+            msg.textContent = '✓ Database Supabase terhubung! Semua data siswa dan absensi langsung tersimpan di cloud.';
+            msg.style.color = '#176c4b';
+          } else {
+            msg.textContent = isError ? ('Peringatan: ' + statusText) : 'Masukkan Supabase Project URL dan Anon Key untuk menghubungkan.';
+            msg.style.color = isError ? '#a6463c' : '#718078';
+          }
+        }
+      }
+
+      async function syncCloudData() {
+        if (!state.cloudReady || !state.supabase) return;
+        const students = state.students.map(studentRow);
+        const attendance = state.records.map(attendanceRow);
+        if (students.length) {
+          const { error } = await state.supabase.from('students').upsert(students, { onConflict: 'id' });
+          if (error) throw error;
+        }
+        if (attendance.length) {
+          const { error } = await state.supabase.from('attendance').upsert(attendance, { onConflict: 'student_id,attendance_date' });
+          if (error) throw error;
+        }
+        $('#storage-label').textContent = 'Tersimpan di Supabase';
+        setStorageDot('online');
+      }
+
+      function saveData() {
+        cacheData();
+        if (state.cloudReady && state.supabase) {
+          $('#storage-label').textContent = 'Menyimpan ke Supabase...';
+          state.syncQueue = state.syncQueue.then(syncCloudData).then(() => {
+            $('#storage-label').textContent = 'Tersimpan di Supabase';
+            setStorageDot('online');
+          }).catch(error => {
+            console.error('Supabase sync error:', error);
+            $('#storage-label').textContent = 'Sinkronisasi tertunda';
+            setStorageDot('error');
+            toast('Gagal simpan ke Supabase: ' + (error.message || 'Periksa koneksi'));
+          });
+        }
+      }
+
+      function showAuth(message = '') { $('#appShell').hidden = true; $('#authScreen').hidden = false; $('#logoutButton').hidden = true; $('#authMessage').textContent = message; }
+      function showApp() { $('#authScreen').hidden = true; $('#appShell').hidden = false; if (window.lucide) lucide.createIcons(); }
+
+      async function loadCloudData(mergeWithLocal = true) {
+        if (!state.supabase) return;
+        const [{ data: students, error: studentError }, { data: records, error: recordError }] = await Promise.all([
+          state.supabase.from('students').select('*').order('name'),
+          state.supabase.from('attendance').select('*').order('created_at_ms', { ascending: false }),
+        ]);
+        if (studentError) throw studentError;
+        if (recordError) throw recordError;
+
+        const cloudStudents = (students || []).map(student => ({
+          id: student.id,
+          name: student.name,
+          className: student.class_name,
+          email: student.email,
+          descriptor: student.descriptor
+        }));
+
+        const cloudRecords = (records || []).map(record => ({
+          studentId: record.student_id,
+          name: record.name,
+          date: record.attendance_date,
+          time: record.attendance_time,
+          status: record.status,
+          method: record.method,
+          createdAt: Number(record.created_at_ms)
+        }));
+
+        if (mergeWithLocal && (state.students.length || state.records.length)) {
+          const cloudStudentIds = new Set(cloudStudents.map(s => s.id));
+          const localOnlyStudents = state.students.filter(s => !cloudStudentIds.has(s.id));
+          const cloudRecordKeys = new Set(cloudRecords.map(r => `${r.studentId}_${r.date}`));
+          const localOnlyRecords = state.records.filter(r => !cloudRecordKeys.has(`${r.studentId}_${r.date}`));
+
+          if (localOnlyStudents.length || localOnlyRecords.length) {
+            state.students = [...cloudStudents, ...localOnlyStudents];
+            state.records = [...cloudRecords, ...localOnlyRecords];
+            await syncCloudData();
+          } else {
+            state.students = cloudStudents;
+            state.records = cloudRecords;
+          }
+        } else {
+          state.students = cloudStudents;
+          state.records = cloudRecords;
+        }
+
+        cacheData();
+        render();
+      }
+
+      async function activateSession(user) {
+        if (state.cloudReady && state.user?.id === user.id) return;
+        state.cloudReady = false; state.user = user;
+        try {
+          const { data: profile, error } = await state.supabase.from('profiles').select('full_name,role').eq('id', user.id).single();
+          if (error) throw error;
+          state.profile = profile;
+          await loadCloudData(true);
+          state.cloudReady = true;
+          $('#profileName').textContent = profile.full_name || user.email;
+          $('#profileRole').textContent = profile.role === 'manager' ? 'Pengelola absensi' : 'Guru / dosen';
+          $('#profileAvatar').textContent = initials(profile.full_name || user.email || '?');
+          $('#managerAccountsBox').hidden = profile.role !== 'manager';
+          $('#logoutButton').hidden = false;
+          $('#storage-label').textContent = 'Tersimpan di Supabase';
+          setStorageDot('online');
+          $('#storageDescription').textContent = 'Data siswa, absensi, dan template wajah tersimpan di database sekolah dan dibagikan kepada akun yang sudah login.';
+          showApp(); subscribeRealtime();
+        } catch (error) {
+          state.user = null; state.profile = null; state.cloudReady = false;
+          showAuth(error.message || 'Data cloud belum bisa dimuat. Periksa skema Supabase.');
+        }
+      }
+
+      function subscribeRealtime() {
+        if (!state.supabase) return;
+        if (state.realtimeChannel) state.supabase.removeChannel(state.realtimeChannel);
+        state.realtimeChannel = state.supabase.channel('school-data')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, scheduleCloudRefresh)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, scheduleCloudRefresh)
+          .subscribe();
+      }
+
+      function scheduleCloudRefresh() {
+        clearTimeout(state.realtimeTimer);
+        state.realtimeTimer = setTimeout(async () => {
+          if (!state.cloudReady || !state.supabase) return;
+          try { await loadCloudData(false); } catch (error) { $('#storage-label').textContent = 'Sinkronisasi tertunda'; }
+        }, 350);
+      }
+
+      async function setupCloudConnection() {
+        const config = getCloudConfig();
+        const urlInput = $('#cfgSupabaseUrl');
+        const keyInput = $('#cfgSupabaseKey');
+        if (urlInput) urlInput.value = config.url || '';
+        if (keyInput) keyInput.value = config.anonKey || '';
+
+        if (!config?.url || !config?.anonKey) {
+          $('#profileName').textContent = 'Administrator';
+          $('#profileRole').textContent = 'Pengelola absensi';
+          $('#storage-label').textContent = 'Data lokal aktif';
+          setStorageDot('offline');
+          $('#managerAccountsBox').hidden = true;
+          $('#logoutButton').hidden = true;
+          updateCloudUI(false, 'Belum Terhubung');
+          showApp();
+          return;
+        }
+
+        if (!window.supabase?.createClient) {
+          updateCloudUI(false, 'Library Supabase belum termuat', true);
+          showApp();
+          return;
+        }
+
+        try {
+          const cleanUrl = config.url.trim().replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+          state.supabase = window.supabase.createClient(cleanUrl, config.anonKey.trim());
+          
+          // Test table connection
+          const { error: testError } = await state.supabase.from('students').select('id').limit(1);
+          if (testError) {
+            console.warn('Supabase test select error:', testError);
+            const isTableMissing = testError.message?.includes('schema cache') || testError.code === 'PGRST205';
+            const friendlyMsg = isTableMissing 
+              ? 'Tabel database belum dibuat di Supabase! Harap jalankan file supabase/schema.sql di SQL Editor Supabase.'
+              : ('Koneksi Ditolak: ' + testError.message);
+            updateCloudUI(false, friendlyMsg, true);
+            $('#storage-label').textContent = isTableMissing ? 'Tabel belum dibuat' : 'Error Supabase';
+            setStorageDot('error');
+            showApp();
+            return;
+          }
+
+          state.cloudReady = true;
+          updateCloudUI(true, 'Terhubung ke Cloud');
+          $('#storage-label').textContent = 'Tersimpan di Supabase';
+          setStorageDot('online');
+          $('#storageDescription').textContent = 'Data siswa, absensi, dan template wajah tersimpan di database Supabase secara real-time.';
+
+          state.supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user) window.setTimeout(() => activateSession(session.user), 0);
+            else if (event === 'SIGNED_OUT') {
+              state.user = null; state.profile = null;
+              $('#logoutButton').hidden = true;
+              $('#profileName').textContent = 'Administrator';
+              $('#profileRole').textContent = 'Pengelola absensi';
+            }
+          });
+
+          const { data: sessionData } = await state.supabase.auth.getSession();
+          if (sessionData?.session?.user) {
+            await activateSession(sessionData.session.user);
+          } else {
+            // Anon cloud mode
+            await loadCloudData(true);
+            subscribeRealtime();
+            showApp();
+          }
+        } catch (err) {
+          console.error('Koneksi Supabase gagal:', err);
+          updateCloudUI(false, 'Gagal terhubung: ' + err.message, true);
+          setStorageDot('error');
+          showApp();
+        }
+      }
+      function toast(message) { const el = $('#toast'); el.textContent = message; el.classList.add('show'); clearTimeout(state.toastTimer); state.toastTimer = setTimeout(() => el.classList.remove('show'), 3200); }
+      function formatDate(date) { return new Date(`${date}T12:00:00`).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }); }
+      function badge(status) { return `<span class="badge ${status === 'Hadir' ? 'present' : status === 'Terlambat' ? 'late' : 'absent'}">${escapeHtml(status)}</span>`; }
+      function methodBadge(method) { return `<span class="badge outline">${escapeHtml(method)}</span>`; }
+      function render() {
+        const todayRows = state.records.filter(record => record.date === today());
+        $('#metric-students').textContent = state.students.length;
+        $('#metric-present').textContent = todayRows.length;
+        $('#metric-late').textContent = todayRows.filter(record => record.status === 'Terlambat').length;
+        $('#metric-away').textContent = Math.max(0, state.students.length - new Set(todayRows.map(record => record.studentId)).size);
+        const recent = [...todayRows].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
+        $('#recentRows').innerHTML = recent.map(record => `<tr><td><div class="person"><div class="person-avatar">${initials(escapeHtml(record.name))}</div><div><div class="person-name">${escapeHtml(record.name)}</div><div class="person-id">${escapeHtml(record.studentId)}</div></div></div></td><td class="mono">${escapeHtml(record.time)}</td><td>${methodBadge(record.method)}</td><td>${badge(record.status)}</td></tr>`).join('');
+        $('#recentEmpty').style.display = recent.length ? 'none' : 'block';
+        $('#studentRows').innerHTML = [...state.students].sort((a, b) => a.name.localeCompare(b.name)).map(student => `<tr><td><input type="checkbox" class="student-select" value="${escapeHtml(student.id)}" aria-label="Pilih ${escapeHtml(student.name)}"></td><td><div class="person"><div class="person-avatar">${initials(escapeHtml(student.name))}</div><div><div class="person-name">${escapeHtml(student.name)}</div><div class="person-id">${escapeHtml(student.id)}</div></div></div></td><td>${escapeHtml(student.className || '-')}</td><td>${escapeHtml(student.email || '-')}</td><td>${student.descriptor ? '<span class="badge present">Terdaftar</span>' : '<span class="badge outline">Belum ada</span>'}</td><td><div class="toolbar"><button class="button" data-face="${escapeHtml(student.id)}"><i data-lucide="camera" size="14"></i>${student.descriptor ? 'Ulangi wajah' : 'Ambil wajah'}</button><button class="button" data-download-code="${escapeHtml(student.id)}" aria-label="Unduh barcode ${escapeHtml(student.name)}"><i data-lucide="qr-code" size="14"></i></button><button class="button danger" data-delete="${escapeHtml(student.id)}" aria-label="Hapus ${escapeHtml(student.name)}"><i data-lucide="trash-2" size="14"></i></button></div></td></tr>`).join('');
+        $('#studentEmpty').style.display = state.students.length ? 'none' : 'block';
+        updateBarcodeActions();
+        const chosenDate = $('#attendanceDate').value || today();
+        const filtered = [...state.records].filter(record => record.date === chosenDate).sort((a, b) => b.createdAt - a.createdAt);
+        $('#attendanceRows').innerHTML = filtered.map(record => `<tr><td><div class="person"><div class="person-avatar">${initials(escapeHtml(record.name))}</div><div class="person-name">${escapeHtml(record.name)}</div></div></td><td class="mono">${escapeHtml(record.studentId)}</td><td>${formatDate(record.date)}</td><td class="mono">${escapeHtml(record.time)}</td><td>${methodBadge(record.method)}</td><td>${badge(record.status)}</td></tr>`).join('');
+        $('#attendanceEmpty').style.display = filtered.length ? 'none' : 'block';
+        if (window.lucide) lucide.createIcons();
+      }
+      function setView(name) { $$('.view').forEach(view => view.classList.toggle('active', view.id === `view-${name}`)); $$('.nav [data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === name)); $('#crumb-name').textContent = ({ dashboard: 'RINGKASAN', students: 'DATA SISWA', attendance: 'RIWAYAT ABSENSI', settings: 'TENTANG SISTEM' })[name]; $('#sidebar').classList.remove('open'); if (name === 'attendance') render(); }
+      function openModal(title, subtitle, body, actions) { stopCamera(); $('#modalTitle').textContent = title; $('#modalSubtitle').textContent = subtitle; $('#modalBody').innerHTML = body; $('#modalActions').innerHTML = actions; $('#modalBackdrop').classList.add('open'); if (window.lucide) lucide.createIcons(); }
+      function closeModal() { stopCamera(); $('#modalBackdrop').classList.remove('open'); }
+      function addStudentModal() {
+        openModal('Tambah siswa', 'Isi identitas siswa dan daftarkan wajah jika kamera tersedia.', `<form id="studentForm"><div class="form-grid"><div class="field"><label for="studentId">NIS / NIM *</label><input class="input" id="studentId" name="id" required maxlength="40" autocomplete="off" placeholder="Contoh: 2400123"></div><div class="field"><label for="studentName">Nama lengkap *</label><input class="input" id="studentName" name="name" required maxlength="100" autocomplete="name" placeholder="Nama siswa"></div><div class="field"><label for="studentClass">Kelas / program</label><input class="input" id="studentClass" name="className" maxlength="80" placeholder="Contoh: XII IPA 1"></div><div class="field"><label for="studentEmail">Email (opsional)</label><input class="input" id="studentEmail" name="email" type="email" maxlength="120" placeholder="nama@sekolah.ac.id"></div></div></form>`, '<button class="button" data-close>Batal</button><button class="button primary" id="saveStudent"><i data-lucide="save" size="14"></i> Simpan siswa</button>');
+        $('#saveStudent').addEventListener('click', () => { const form = $('#studentForm'); if (!form.reportValidity()) return; const data = Object.fromEntries(new FormData(form)); if (state.students.some(student => student.id.toLowerCase() === data.id.trim().toLowerCase())) { toast('NIS / NIM tersebut sudah terdaftar.'); return; } state.students.push({ id: data.id.trim(), name: data.name.trim(), className: data.className.trim(), email: data.email.trim(), descriptor: null }); saveData(); render(); closeModal(); toast('Data siswa berhasil ditambahkan.'); });
+      }
+      function cameraMarkup(message) { return `<div class="camera-box"><video id="cameraVideo" autoplay muted playsinline></video><div class="camera-placeholder" id="cameraPlaceholder"><i data-lucide="camera" size="28"></i>${message}</div><div class="scan-overlay" id="scanOverlay"></div></div><div class="cam-status" id="cameraStatus">Kamera belum dinyalakan.</div>`; }
+      async function startCamera(video, facingMode = 'user') { if (!navigator.mediaDevices?.getUserMedia) throw new Error('Browser tidak mendukung akses kamera. Gunakan HTTPS atau localhost.'); state.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false }); video.srcObject = state.stream; await video.play(); video.classList.add('on'); const placeholder = $('#cameraPlaceholder'); if (placeholder) placeholder.style.display = 'none'; }
+      function stopCamera() { if (state.timer) { clearInterval(state.timer); state.timer = null; } if (state.scanControls) { state.scanControls.stop(); state.scanControls = null; } if (state.stream) { state.stream.getTracks().forEach(track => track.stop()); state.stream = null; } }
+      async function loadFaceModels() { if (state.faceModelsReady) return; if (!window.faceapi) throw new Error('Library pengenalan wajah belum termuat. Pastikan koneksi internet aktif.'); const base = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights'; await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(base), faceapi.nets.faceLandmark68Net.loadFromUri(base), faceapi.nets.faceRecognitionNet.loadFromUri(base)]); state.faceModelsReady = true; }
+      function rebuildMatcher() { const labeled = state.students.filter(student => Array.isArray(student.descriptor) && student.descriptor.length).map(student => new faceapi.LabeledFaceDescriptors(student.id, [new Float32Array(student.descriptor)])); state.faceMatcher = labeled.length ? new faceapi.FaceMatcher(labeled, 0.48) : null; }
+      function faceModal() {
+        if (!state.students.length) { toast('Tambahkan data siswa terlebih dahulu.'); setView('students'); return; }
+        openModal('Absensi wajah', 'Posisikan wajah di tengah kamera dan tunggu verifikasi.', cameraMarkup('Kamera akan mengenali siswa yang sudah terdaftar wajahnya.'), '<div class="camera-controls"><button class="button" data-close>Tutup</button></div><button class="button primary" id="startFace"><i data-lucide="scan-face" size="15"></i> Mulai kamera</button>');
+        $('#startFace').addEventListener('click', async event => { const button = event.currentTarget; button.disabled = true; button.textContent = 'Memuat model...'; const status = $('#cameraStatus'); try { await loadFaceModels(); rebuildMatcher(); if (!state.faceMatcher) { status.textContent = 'Belum ada wajah terdaftar. Tutup lalu tambah wajah melalui data siswa.'; button.disabled = false; button.innerHTML = '<i data-lucide="scan-face" size="15"></i> Coba lagi'; if (window.lucide) lucide.createIcons(); return; } await startCamera($('#cameraVideo')); status.textContent = 'Mencari wajah...'; button.style.display = 'none'; state.timer = setInterval(async () => { if (!state.stream || !$('#cameraVideo')) return; try { const detection = await faceapi.detectSingleFace($('#cameraVideo'), new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor(); if (!detection) { status.textContent = 'Wajah belum terlihat. Arahkan wajah ke kamera.'; return; } const match = state.faceMatcher.findBestMatch(detection.descriptor); if (match.label !== 'unknown') { const student = state.students.find(item => item.id === match.label); if (student) { const result = recordAttendance(student, 'Wajah'); closeModal(); toast(`Absensi ${student.name}: ${result}.`); } } else status.textContent = 'Wajah belum cocok. Coba posisi yang lebih terang atau gunakan barcode.'; } catch { status.textContent = 'Pengenalan berjalan...'; } }, 700); } catch (error) { status.textContent = error.message || 'Kamera tidak dapat diakses.'; button.disabled = false; button.innerHTML = '<i data-lucide="scan-face" size="15"></i> Coba lagi'; if (window.lucide) lucide.createIcons(); } });
+      }
+      function parseScannedValue(raw) { const value = raw.trim(); try { const parsed = JSON.parse(value); return String(parsed.id || parsed.nis || parsed.nim || value).trim(); } catch { return value; } }
+      function submitCode(raw) { const id = parseScannedValue(raw); if (!id) return; const student = state.students.find(item => item.id.toLowerCase() === id.toLowerCase()); if (!student) { toast(`ID ${id} tidak ditemukan. Isi barcode dengan NIS / NIM siswa.`); return; } const result = recordAttendance(student, 'Barcode / QR'); closeModal(); toast(`Absensi ${student.name}: ${result}.`); }
+      function barcodeModal() {
+        openModal('Scan barcode / QR', 'Pindai kode pada kartu siswa. Isi kode dapat berupa NIS / NIM.', `${cameraMarkup('Arahkan barcode atau QR ke area kamera.')}<div class="field" style="margin-top:12px"><label for="barcodeCamera">Pilih kamera</label><select class="input" id="barcodeCamera" disabled><option>Kamera akan tersedia setelah diizinkan</option></select></div><div class="field" style="margin-top:14px"><label for="codeInput">Masukkan NIS / NIM secara manual</label><div style="display:flex;gap:8px"><input class="input" id="codeInput" style="flex:1" autocomplete="off" placeholder="Contoh: 2400123"><button class="button primary" id="submitCode"><i data-lucide="check" size="14"></i> Catat</button></div></div>`, '<button class="button" data-close>Tutup</button><button class="button primary" id="startBarcode"><i data-lucide="scan-line" size="15"></i> Buka kamera</button>');
+        $('#submitCode').addEventListener('click', () => submitCode($('#codeInput').value)); $('#codeInput').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); submitCode(event.currentTarget.value); } });
+        const button = $('#startBarcode'); const status = $('#cameraStatus'); const video = $('#cameraVideo'); const cameraSelect = $('#barcodeCamera');
+        async function startScanner(deviceId) {
+          if (!window.ZXing?.BrowserMultiFormatReader) { status.textContent = 'Library pemindai tidak termuat. Periksa koneksi internet atau masukkan NIS / NIM secara manual.'; return; }
+          button.disabled = true; cameraSelect.disabled = true; status.textContent = 'Membuka kamera...';
+          try {
+            const hints = new Map();
+            hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE, ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39, ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E, ZXing.BarcodeFormat.CODABAR, ZXing.BarcodeFormat.ITF]);
+            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+            const reader = new ZXing.BrowserMultiFormatReader(hints);
+            $('#scanOverlay').classList.add('on');
+            state.scanControls = await reader.decodeFromVideoDevice(deviceId || undefined, video, (result, error) => {
+              if (result) { status.textContent = 'Kode terbaca. Mencatat absensi...'; submitCode(result.getText()); }
+              else if (error && !(error instanceof ZXing.NotFoundException)) status.textContent = 'Kode belum terbaca, dekatkan kartu dan pastikan pencahayaan cukup.';
+            });
+            const activeDeviceId = video.srcObject?.getVideoTracks()[0]?.getSettings().deviceId || deviceId;
+            const devices = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'videoinput');
+            const rearCamera = devices.find(device => /back|rear|environment|belakang|world/i.test(device.label));
+            cameraSelect.innerHTML = devices.map((device, index) => {
+              const label = device.label || `Kamera ${index + 1}`;
+              const side = /back|rear|environment|belakang|world/i.test(label) ? ' (Belakang)' : /front|user|selfie|depan/i.test(label) ? ' (Depan)' : '';
+              return `<option value="${escapeHtml(device.deviceId)}">${escapeHtml(label + side)}</option>`;
+            }).join('');
+            cameraSelect.value = activeDeviceId || rearCamera?.deviceId || devices[0]?.deviceId || '';
+            cameraSelect.disabled = devices.length < 2;
+            video.classList.add('on'); button.style.display = 'none'; status.textContent = 'Arahkan kode ke kamera...';
+          } catch (error) {
+            status.textContent = error.message || 'Kamera tidak dapat diakses.'; button.style.display = ''; button.disabled = false; cameraSelect.disabled = cameraSelect.options.length < 2;
+          }
+        }
+        button.addEventListener('click', () => startScanner());
+        cameraSelect.addEventListener('change', async () => {
+          const deviceId = cameraSelect.value;
+          stopCamera(); video.srcObject = null; video.classList.remove('on');
+          await startScanner(deviceId);
+        });
+      }
+      function recordAttendance(student, method) { const date = today(); if (state.records.some(record => record.studentId === student.id && record.date === date)) { toast(`${student.name} sudah tercatat hari ini.`); return 'sudah hadir'; } const now = new Date(); const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }); const minutesNow = now.getHours() * 60 + now.getMinutes(); const status = minutesNow > 7 * 60 ? 'Terlambat' : 'Hadir'; state.records.push({ studentId: student.id, name: student.name, date, time, status, method, createdAt: now.getTime() }); saveData(); render(); return status.toLowerCase(); }
+      function updateBarcodeActions() { const selected = $$('.student-select:checked'); $('#selectedCount').textContent = selected.length; $('#downloadSelectedCodes').disabled = selected.length === 0; const selectAll = $('#selectAllStudents'); selectAll.checked = state.students.length > 0 && selected.length === state.students.length; selectAll.indeterminate = selected.length > 0 && selected.length < state.students.length; }
+      async function makeBarcodePng(student) {
+        const qrContainer = document.createElement('div');
+        new QRCode(qrContainer, { text: student.id, width: 512, height: 512, colorDark: '#1d3028', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+        const qrCanvas = qrContainer.querySelector('canvas');
+        if (!qrCanvas) throw new Error('Gagal membuat gambar QR.');
+        const dataUrl = qrCanvas.toDataURL('image/png');
+        const image = new Image();
+        await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; image.src = dataUrl; });
+        const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 650;
+        const context = canvas.getContext('2d'); context.fillStyle = '#ffffff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 44, 20, 512, 512);
+        context.textAlign = 'center'; context.fillStyle = '#1d2823'; context.font = '700 23px Manrope, sans-serif';
+        while (context.measureText(student.name).width > 540 && parseInt(context.font, 10) > 14) context.font = `700 ${parseInt(context.font, 10) - 1}px Manrope, sans-serif`;
+        context.fillText(student.name, 300, 574, 540); context.font = '500 21px monospace'; context.fillText(student.id, 300, 615, 540);
+        if (student.className) { context.fillStyle = '#718078'; context.font = '14px Manrope, sans-serif'; context.fillText(student.className, 300, 638, 540); }
+        return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Gagal membuat gambar barcode.')), 'image/png'));
+      }
+      function safeFilePart(value) { return String(value).replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'siswa'; }
+      function triggerDownload(blob, filename) { const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+      async function downloadBarcodes(students) {
+        if (!students.length) return;
+        if (typeof window.QRCode !== 'function' || (students.length > 1 && !window.JSZip)) { toast('Generator barcode belum termuat. Periksa koneksi internet lalu coba lagi.'); return; }
+        const buttons = $$('#studentRows button, #downloadSelectedCodes'); buttons.forEach(button => button.disabled = true);
+        try {
+          const images = await Promise.all(students.map(makeBarcodePng));
+          if (students.length === 1) triggerDownload(images[0], `barcode-${safeFilePart(students[0].id)}.png`);
+          else { const zip = new JSZip(); students.forEach((student, index) => zip.file(`barcode-${safeFilePart(student.id)}-${index + 1}.png`, images[index])); const archive = await zip.generateAsync({ type: 'blob' }); triggerDownload(archive, `barcode-siswa-${today()}.zip`); }
+          toast(students.length === 1 ? 'Barcode siswa berhasil diunduh.' : `Barcode ${students.length} siswa berhasil diunduh sebagai ZIP.`);
+        } catch (error) { toast(error.message || 'Barcode gagal dibuat. Coba kembali.'); }
+        finally { buttons.forEach(button => button.disabled = false); updateBarcodeActions(); }
+      }
+      function registerFace(studentId) {
+        const student = state.students.find(item => item.id === studentId); if (!student) return;
+        openModal('Daftarkan wajah', `Pendaftaran untuk ${student.name}. Ambil gambar dengan pencahayaan yang cukup.`, cameraMarkup('Wajah siswa akan disimpan sebagai template biometrik pada browser ini.'), '<button class="button" data-close>Batal</button><button class="button primary" id="startEnroll"><i data-lucide="camera" size="15"></i> Buka kamera</button>');
+        $('#startEnroll').addEventListener('click', async event => {
+          const button = event.currentTarget; const status = $('#cameraStatus'); button.disabled = true;
+          try {
+            await loadFaceModels();
+            await startCamera($('#cameraVideo'));
+            const video = $('#cameraVideo');
+            const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.35 });
+            let detecting = false;
+            status.textContent = 'Posisikan wajah lurus dan tunggu...'; button.style.display = 'none';
+            state.timer = setInterval(async () => {
+              if (!state.stream || !video) return;
+              if (!state.stream.getVideoTracks().some(track => track.readyState === 'live')) {
+                status.textContent = 'Koneksi kamera terputus. Tekan "Buka kamera" untuk mencoba lagi.';
+                stopCamera(); button.style.display = ''; button.disabled = false; return;
+              }
+              if (detecting || video.readyState < 2) return;
+              detecting = true;
+              try {
+                const result = await faceapi.detectSingleFace(video, detectorOptions).withFaceLandmarks().withFaceDescriptor();
+                if (!result) { status.textContent = 'Wajah belum terdeteksi. Dekatkan wajah dan pastikan pencahayaan cukup.'; return; }
+                const current = state.students.find(item => item.id === studentId);
+                if (current) current.descriptor = Array.from(result.descriptor);
+                saveData(); render(); closeModal(); toast(`Wajah ${student.name} berhasil didaftarkan.`);
+              } catch (error) { status.textContent = error.message || 'Pengenalan wajah mengalami kendala.'; }
+              finally { detecting = false; }
+            }, 500);
+          } catch (error) {
+            stopCamera(); status.textContent = error.message || 'Kamera tidak dapat diakses.'; button.disabled = false;
+            button.innerHTML = '<i data-lucide="camera" size="15"></i> Coba lagi'; if (window.lucide) lucide.createIcons();
+          }
+        });
+      }
+      function createTeacherAccountModal() {
+        if (!state.cloudReady || state.profile?.role !== 'manager') { toast('Hanya pengelola yang dapat membuat akun.'); return; }
+        openModal('Buat akun guru/dosen', 'Akun dibuat dengan email dan password untuk login Hadirin.', `<form id="teacherAccountForm"><div class="form-grid"><div class="field full"><label for="teacherFullName">Nama guru/dosen *</label><input class="input" id="teacherFullName" name="fullName" maxlength="100" required autocomplete="name"></div><div class="field full"><label for="teacherEmail">Gmail / email *</label><input class="input" id="teacherEmail" name="email" type="email" maxlength="254" required autocomplete="email" placeholder="nama@gmail.com"></div><div class="field full"><label for="teacherPassword">Password sementara *</label><input class="input" id="teacherPassword" name="password" type="password" minlength="8" required autocomplete="new-password"><small>Minimal 8 karakter. Sampaikan password sementara secara aman.</small></div></div></form>`, '<button class="button" data-close>Batal</button><button class="button primary" id="saveTeacherAccount"><i data-lucide="user-plus" size="14"></i> Buat akun</button>');
+        $('#saveTeacherAccount').addEventListener('click', async event => {
+          const form = $('#teacherAccountForm'); if (!form.reportValidity()) return;
+          const button = event.currentTarget; button.disabled = true;
+          const data = Object.fromEntries(new FormData(form));
+          const { error } = await state.supabase.functions.invoke('create-teacher', { body: { fullName: data.fullName, email: data.email, password: data.password } });
+          button.disabled = false;
+          if (error) { toast(error.message || 'Akun tidak dapat dibuat.'); return; }
+          closeModal(); toast('Akun guru/dosen berhasil dibuat.');
+        });
+      }
+      async function importLocalData() {
+        if (!state.cloudReady || state.profile?.role !== 'manager') { toast('Hanya pengelola yang dapat mengimpor data.'); return; }
+        const snapshot = state.localSnapshot || { students: [], records: [] };
+        if (!snapshot.students.length && !snapshot.records.length) { toast('Tidak ada data lokal untuk diimpor.'); return; }
+        if (!confirm(`Impor ${snapshot.students.length} siswa dan ${snapshot.records.length} catatan dari perangkat ini? Data dengan ID sama di cloud akan diperbarui, termasuk template wajah.`)) return;
+        const previous = { students: state.students, records: state.records };
+        state.students = snapshot.students; state.records = snapshot.records;
+        try {
+          await syncCloudData(); await loadCloudData(); state.localSnapshot = null;
+          toast('Data perangkat berhasil diimpor dan disinkronkan.');
+        } catch (error) {
+          state.students = previous.students; state.records = previous.records; render();
+          toast(error.message || 'Impor gagal. Data cloud tidak berhasil diperbarui.');
+        }
+      }
+      function exportCsv() { const chosenDate = $('#attendanceDate').value || today(); const records = state.records.filter(record => record.date === chosenDate); if (!records.length) { toast('Tidak ada data untuk tanggal yang dipilih.'); return; } const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`; const rows = [['NIS / NIM', 'Nama', 'Tanggal', 'Waktu', 'Metode', 'Status'], ...records.map(record => [record.studentId, record.name, record.date, record.time, record.method, record.status])]; const csv = '\ufeff' + rows.map(row => row.map(escapeCsv).join(',')).join('\r\n'); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); link.download = `absensi-${chosenDate}.csv`; link.click(); URL.revokeObjectURL(link.href); }
+      async function deleteStudent(id) { const student = state.students.find(item => item.id === id); if (!student || !confirm(`Hapus data ${student.name}? Riwayat absensinya tetap disimpan.`)) return; if (state.cloudReady) { const { error } = await state.supabase.from('students').delete().eq('id', id); if (error) { toast(error.message || 'Data siswa gagal dihapus.'); return; } } state.students = state.students.filter(item => item.id !== id); saveData(); render(); toast('Data siswa dihapus.'); }
+      function init() {
+        loadData(); $('#todayDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }); $('#attendanceDate').value = today(); render(); if (window.lucide) lucide.createIcons();
+        $$('.nav [data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+        $$('[data-go]').forEach(button => button.addEventListener('click', () => setView(button.dataset.go)));
+        $$('[data-action]').forEach(button => button.addEventListener('click', () => ({ face: faceModal, barcode: barcodeModal, 'add-student': addStudentModal })[button.dataset.action]?.()));
+        $('#modalBackdrop').addEventListener('click', event => { if (event.target === $('#modalBackdrop') || event.target.closest('[data-close]')) closeModal(); });
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+        $('#studentSearch').addEventListener('input', event => { const term = event.target.value.toLowerCase(); $$('#studentRows tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none'; }); });
+        $('#selectAllStudents').addEventListener('change', event => { $$('.student-select').forEach(input => input.checked = event.currentTarget.checked); updateBarcodeActions(); });
+        $('#studentRows').addEventListener('change', event => { if (event.target.matches('.student-select')) updateBarcodeActions(); });
+        $('#downloadSelectedCodes').addEventListener('click', () => downloadBarcodes($$('.student-select:checked').map(input => state.students.find(student => student.id === input.value)).filter(Boolean)));
+        $('#studentRows').addEventListener('click', event => { const faceButton = event.target.closest('[data-face]'); if (faceButton) registerFace(faceButton.dataset.face); const codeButton = event.target.closest('[data-download-code]'); if (codeButton) downloadBarcodes(state.students.filter(student => student.id === codeButton.dataset.downloadCode)); const deleteButton = event.target.closest('[data-delete]'); if (deleteButton) deleteStudent(deleteButton.dataset.delete); });
+        $('#attendanceDate').addEventListener('change', render); $('#exportCsv').addEventListener('click', exportCsv); $('#mobileMenu').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+        $('#loginForm').addEventListener('submit', async event => { event.preventDefault(); if (!state.supabase) { $('#authMessage').textContent = 'Login cloud belum dikonfigurasi.'; return; } const button = $('#loginButton'); button.disabled = true; $('#authMessage').textContent = ''; const formData = new FormData(event.currentTarget); const { error } = await state.supabase.auth.signInWithPassword({ email: String(formData.get('email')).trim(), password: String(formData.get('password')) }); button.disabled = false; if (error) $('#authMessage').textContent = error.message; });
+        $('#logoutButton').addEventListener('click', async () => { if (state.supabase) await state.supabase.auth.signOut(); });
+        $('#createTeacherAccount').addEventListener('click', createTeacherAccountModal); $('#importLocalData').addEventListener('click', importLocalData);
+        $('#btnConnectSupabase').addEventListener('click', async () => {
+          const url = $('#cfgSupabaseUrl').value.trim().replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+          const key = $('#cfgSupabaseKey').value.trim();
+          if (!url || !key) {
+            toast('Harap isi URL dan Anon Key Supabase.');
+            return;
+          }
+          localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify({ url, anonKey: key }));
+          toast('Menghubungkan ke Supabase...');
+          await setupCloudConnection();
+          if (state.cloudReady) {
+            toast('Berhasil terhubung! Data disinkronkan.');
+          }
+        });
+        $('#btnSyncCloudNow').addEventListener('click', async () => {
+          if (!state.supabase || !state.cloudReady) {
+            toast('Koneksi Supabase belum aktif.');
+            return;
+          }
+          toast('Menyinkronkan data...');
+          try {
+            await syncCloudData();
+            await loadCloudData(false);
+            toast('Sinkronisasi selesai!');
+          } catch (e) {
+            toast('Sinkronisasi gagal: ' + e.message);
+          }
+        });
+        $('#btnDisconnectCloud').addEventListener('click', () => {
+          if (!confirm('Putuskan koneksi dan hapus konfigurasi Supabase dari browser ini?')) return;
+          localStorage.removeItem(CLOUD_CONFIG_KEY);
+          state.supabase = null;
+          state.cloudReady = false;
+          $('#cfgSupabaseUrl').value = '';
+          $('#cfgSupabaseKey').value = '';
+          updateCloudUI(false, 'Belum Terhubung');
+          $('#storage-label').textContent = 'Data lokal aktif';
+          setStorageDot('offline');
+          toast('Koneksi Supabase diputuskan.');
+        });
+        $('#storage-label').textContent = 'Data lokal aktif';
+        setupCloudConnection();
+      }
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    })();
+  </script>
+</body>
+
+</html>
